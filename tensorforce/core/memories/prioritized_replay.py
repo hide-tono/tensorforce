@@ -40,7 +40,7 @@ class PrioritizedReplay(Memory):
         self.none_priority_index = 0
         self.batch_indices = None
         self.last_observation = None  # stores last observation until next_state value is known
-        
+
         self.logger = logging.getLogger(__name__)
 
     def add_observation(self, state, action, reward, terminal, internal):
@@ -63,7 +63,7 @@ class PrioritizedReplay(Memory):
 
     def get_batch(self, batch_size, next_states=False):
         """
-        Samples a batch of the specified size according to priority. 
+        Samples a batch of the specified size according to priority.
 
         Args:
             batch_size: The batch size
@@ -85,28 +85,34 @@ class PrioritizedReplay(Memory):
 
         self.batch_indices = list()
         not_sampled_index = self.none_priority_index
-        sum_priorities = sum(priority for priority, _ in self.observations if priority is not None)
+        priorities = np.array([priority for priority, _ in self.observations if priority is not None])
+        sum_priorities = sum(priorities)
+        probabilities = priorities/sum_priorities
         for n in xrange(batch_size):
             if not_sampled_index < len(self.observations):
                 _, observation = self.observations[not_sampled_index]
                 index = not_sampled_index
                 not_sampled_index += 1
-            elif sum_priorities / self.capacity < util.epsilon:
-                index = randrange(self.none_priority_index)
-                while index in self.batch_indices:
-                    index = randrange(self.none_priority_index)
-                observation = self.observations[index]
             else:
-                if len(self.observations) < batch_size*100:
-                    self.logger.warn("batch size should be much smaller than the number of observations in memory or get_batch wil be extremely slow. Increase config.first_update")
-                while True:
-                    sample = random()
-                    for index, (priority, observation) in enumerate(self.observations):
-                        sample -= priority / sum_priorities
-                        if sample < 0.0 or index >= self.none_priority_index:
-                            break
-                    if index not in self.batch_indices:
-                        break
+                unsampled_indices = list(set(range(self.none_priority_index)) - set(self.batch_indices))
+                # If all probabilities are near zero get a random sample
+                # otherwise weight by priority
+                if sum_priorities / self.capacity < util.epsilon:
+                    p = None
+                else:
+                    unsampled_probabilities = probabilities[unsampled_indices]
+                    p = unsampled_probabilities/unsampled_probabilities.sum()
+                index = np.random.choice(unsampled_indices, size=1, replace=False, p=p)[0]
+                _, observation = self.observations[index]
+
+                # while True:
+                #     sample = random()
+                #     for index, (priority, observation) in enumerate(self.observations):
+                #         sample -= priority / sum_priorities
+                #         if sample < 0.0 or index >= self.none_priority_index:
+                #             break
+                #     if index not in self.batch_indices:
+                #         break
 
             for name, state in states.items():
                 state[n] = observation[0][name]
@@ -131,9 +137,9 @@ class PrioritizedReplay(Memory):
     def update_batch(self, loss_per_instance):
         """
         Computes priorities according to loss.
-        
+
         Args:
-            loss_per_instance: 
+            loss_per_instance:
 
         Returns:
 
