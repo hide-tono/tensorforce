@@ -74,6 +74,7 @@ class PrioritizedReplay(Memory):
         """
         if batch_size>len(self.observations):
             raise TensorForceError("Batch size is larger than observations in memory: increase config.first_update.")
+
         states = {name: np.zeros((batch_size,) + tuple(state.shape), dtype=util.np_dtype(state.type)) for name, state in self.states_config.items()}
         actions = {name: np.zeros((batch_size,) + tuple(action.shape), dtype=util.np_dtype('float' if action.continuous else 'int')) for name, action in self.actions_config.items()}
         rewards = np.zeros((batch_size,), dtype=util.np_dtype('float'))
@@ -83,36 +84,29 @@ class PrioritizedReplay(Memory):
             next_states = {name: np.zeros((batch_size,) + tuple(state.shape), dtype=util.np_dtype(state.type)) for name, state in self.states_config.items()}
             next_internals = [np.zeros((batch_size,) + shape, dtype) for shape, dtype in self.internals_config]
 
-        self.batch_indices = list()
-        not_sampled_index = self.none_priority_index
-        priorities = np.array([priority for priority, _ in self.observations if priority is not None])
-        sum_priorities = sum(priorities)
-        probabilities = priorities/sum_priorities
-        for n in xrange(batch_size):
-            if not_sampled_index < len(self.observations):
-                _, observation = self.observations[not_sampled_index]
-                index = not_sampled_index
-                not_sampled_index += 1
-            else:
-                unsampled_indices = list(set(range(self.none_priority_index)) - set(self.batch_indices))
-                # If all probabilities are near zero get a random sample
-                # otherwise weight by priority
-                if sum_priorities / self.capacity < util.epsilon:
-                    p = None
-                else:
-                    unsampled_probabilities = probabilities[unsampled_indices]
-                    p = unsampled_probabilities/unsampled_probabilities.sum()
-                index = np.random.choice(unsampled_indices, size=1, replace=False, p=p)[0]
-                _, observation = self.observations[index]
+        # if we have unseen observations, use these
+        unseen_indices = list(range(self.none_priority_index, len(self.observations)))
+        self.batch_indices = unseen_indices[:batch_size]
 
-                # while True:
-                #     sample = random()
-                #     for index, (priority, observation) in enumerate(self.observations):
-                #         sample -= priority / sum_priorities
-                #         if sample < 0.0 or index >= self.none_priority_index:
-                #             break
-                #     if index not in self.batch_indices:
-                #         break
+        # get remaining observations using weighted sampling
+        if len(self.batch_indices) < batch_size:
+            priorities = np.array([priority for priority, _ in self.observations if priority is not None])
+            sum_priorities = sum(priorities)
+
+            unsampled_indices = list(set(range(self.none_priority_index)) - set(self.batch_indices))
+
+            # If all probabilities are near zero get a random sample
+            # otherwise weight by priority
+            if sum_priorities / self.capacity < util.epsilon:
+                p = None
+            else:
+                probabilities = priorities/sum_priorities
+                unsampled_probabilities = probabilities[unsampled_indices]
+                p = unsampled_probabilities/unsampled_probabilities.sum()
+            self.batch_indices += np.random.choice(unsampled_indices, size=batch_size-len(self.batch_indices), replace=False, p=p).tolist()
+
+        for n, index in enumerate(self.batch_indices):
+            _, observation = self.observations[index]
 
             for name, state in states.items():
                 state[n] = observation[0][name]
@@ -127,7 +121,6 @@ class PrioritizedReplay(Memory):
                     next_state[n] = observation[5][name]
                 for k, next_internal in enumerate(next_internals):
                     next_internal[n] = observation[6][k]
-            self.batch_indices.append(index)
 
         if next_states:
             return dict(states=states, actions=actions, rewards=rewards, terminals=terminals, internals=internals, next_states=next_states, next_internals=next_internals)
