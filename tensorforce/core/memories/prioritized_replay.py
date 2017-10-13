@@ -24,6 +24,7 @@ from __future__ import division
 from random import random, randrange
 from six.moves import xrange
 import numpy as np
+import logging
 
 from tensorforce import util, TensorForceError
 from tensorforce.core.memories import Memory
@@ -39,6 +40,9 @@ class PrioritizedReplay(Memory):
         self.none_priority_index = 0
         self.batch_indices = None
         self.last_observation = None  # stores last observation until next_state value is known
+        
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(util.log_levels[config.log_level])
 
     def add_observation(self, state, action, reward, terminal, internal):
         if self.internals_config is None and internal is not None:
@@ -69,6 +73,8 @@ class PrioritizedReplay(Memory):
         Returns: A dict containing states, actions, rewards, terminals, internal states (and next states)
 
         """
+        if batch_size<len(self.observations):
+            raise TensorForceError("Batch size is larger than observations in memory: increase config.first_update.")
         states = {name: np.zeros((batch_size,) + tuple(state.shape), dtype=util.np_dtype(state.type)) for name, state in self.states_config.items()}
         actions = {name: np.zeros((batch_size,) + tuple(action.shape), dtype=util.np_dtype('float' if action.continuous else 'int')) for name, action in self.actions_config.items()}
         rewards = np.zeros((batch_size,), dtype=util.np_dtype('float'))
@@ -90,8 +96,11 @@ class PrioritizedReplay(Memory):
                 index = randrange(self.none_priority_index)
                 while index in self.batch_indices:
                     index = randrange(self.none_priority_index)
+                observation = self.observations[index]
             else:
                 while True:
+                    if len(self.observations) < batch_size*100:
+                        self.logger.warn("batch size should be much smaller than the number of observations in memory or get_batch wil be extremely slow. Increase config.first_update")
                     sample = random()
                     for index, (priority, observation) in enumerate(self.observations):
                         sample -= priority / sum_priorities
