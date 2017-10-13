@@ -72,38 +72,48 @@ class PrioritizedReplay(Memory):
         Returns: A dict containing states, actions, rewards, terminals, internal states (and next states)
 
         """
-        if batch_size>len(self.observations):
-            raise TensorForceError("Batch size is larger than observations in memory: increase config.first_update.")
+        if batch_size > len(self.observations):
+            raise TensorForceError(
+                "Batch size is larger than observations in memory: increase config.first_update.")
 
-        states = {name: np.zeros((batch_size,) + tuple(state.shape), dtype=util.np_dtype(state.type)) for name, state in self.states_config.items()}
-        actions = {name: np.zeros((batch_size,) + tuple(action.shape), dtype=util.np_dtype('float' if action.continuous else 'int')) for name, action in self.actions_config.items()}
+        states = {name: np.zeros((batch_size,) + tuple(state.shape), dtype=util.np_dtype(
+            state.type)) for name, state in self.states_config.items()}
+        actions = {name: np.zeros((batch_size,) + tuple(action.shape), dtype=util.np_dtype(
+            'float' if action.continuous else 'int')) for name, action in self.actions_config.items()}
         rewards = np.zeros((batch_size,), dtype=util.np_dtype('float'))
         terminals = np.zeros((batch_size,), dtype=util.np_dtype('bool'))
-        internals = [np.zeros((batch_size,) + shape, dtype) for shape, dtype in self.internals_config]
+        internals = [np.zeros((batch_size,) + shape, dtype)
+                     for shape, dtype in self.internals_config]
         if next_states:
-            next_states = {name: np.zeros((batch_size,) + tuple(state.shape), dtype=util.np_dtype(state.type)) for name, state in self.states_config.items()}
-            next_internals = [np.zeros((batch_size,) + shape, dtype) for shape, dtype in self.internals_config]
+            next_states = {name: np.zeros((batch_size,) + tuple(state.shape), dtype=util.np_dtype(
+                state.type)) for name, state in self.states_config.items()}
+            next_internals = [np.zeros((batch_size,) + shape, dtype)
+                              for shape, dtype in self.internals_config]
 
         # if we have unseen observations, use these
-        unseen_indices = list(range(self.none_priority_index, len(self.observations)))
+        unseen_indices = list(
+            range(self.none_priority_index, len(self.observations)))
         self.batch_indices = unseen_indices[:batch_size]
 
         # get remaining observations using weighted sampling
         if len(self.batch_indices) < batch_size:
-            priorities = np.array([priority for priority, _ in self.observations if priority is not None])
+            priorities = np.array(
+                [priority for priority, _ in self.observations if priority is not None])
             sum_priorities = sum(priorities)
 
-            unsampled_indices = list(set(range(self.none_priority_index)) - set(self.batch_indices))
+            unsampled_indices = list(
+                set(range(self.none_priority_index)) - set(self.batch_indices))
 
             # If all probabilities are near zero get a random sample
             # otherwise weight by priority
             if sum_priorities / self.capacity < util.epsilon:
                 p = None
             else:
-                probabilities = priorities/sum_priorities
+                probabilities = priorities / sum_priorities
                 unsampled_probabilities = probabilities[unsampled_indices]
-                p = unsampled_probabilities/unsampled_probabilities.sum()
-            self.batch_indices += np.random.choice(unsampled_indices, size=batch_size-len(self.batch_indices), replace=False, p=p).tolist()
+                p = unsampled_probabilities / unsampled_probabilities.sum()
+            self.batch_indices += np.random.choice(unsampled_indices, size=batch_size - len(
+                self.batch_indices), replace=False, p=p).tolist()
 
         for n, index in enumerate(self.batch_indices):
             _, observation = self.observations[index]
@@ -126,6 +136,7 @@ class PrioritizedReplay(Memory):
             return dict(states=states, actions=actions, rewards=rewards, terminals=terminals, internals=internals, next_states=next_states, next_internals=next_internals)
         else:
             return dict(states=states, actions=actions, rewards=rewards, terminals=terminals, internals=internals)
+
 
     def update_batch(self, loss_per_instance):
         """
