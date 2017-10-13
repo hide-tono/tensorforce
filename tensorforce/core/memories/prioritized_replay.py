@@ -40,7 +40,7 @@ class PrioritizedReplay(Memory):
         self.none_priority_index = 0
         self.batch_indices = None
         self.last_observation = None  # stores last observation until next_state value is known
-        
+
         self.logger = logging.getLogger(__name__)
 
     def add_observation(self, state, action, reward, terminal, internal):
@@ -63,7 +63,7 @@ class PrioritizedReplay(Memory):
 
     def get_batch(self, batch_size, next_states=False):
         """
-        Samples a batch of the specified size according to priority. 
+        Samples a batch of the specified size according to priority.
 
         Args:
             batch_size: The batch size
@@ -97,8 +97,8 @@ class PrioritizedReplay(Memory):
                     index = randrange(self.none_priority_index)
                 observation = self.observations[index]
             else:
-                if len(self.observations) < batch_size*100:
-                    self.logger.warn("batch size should be much smaller than the number of observations in memory or get_batch wil be extremely slow. Increase config.first_update")
+                # if len(self.observations) < batch_size*100:
+                    # self.logger.warn("batch size should be much smaller than the number of observations in memory or get_batch wil be extremely slow. Increase config.first_update")
                 while True:
                     sample = random()
                     for index, (priority, observation) in enumerate(self.observations):
@@ -131,9 +131,9 @@ class PrioritizedReplay(Memory):
     def update_batch(self, loss_per_instance):
         """
         Computes priorities according to loss.
-        
+
         Args:
-            loss_per_instance: 
+            loss_per_instance:
 
         Returns:
 
