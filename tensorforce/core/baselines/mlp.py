@@ -48,10 +48,10 @@ class MLPBaseline(Baseline):
 
     def create_tf_operations(self, state, scope='mlp_baseline'):
         with tf.variable_scope(scope) as scope:
-            self.state = tf.placeholder(dtype=tf.float32, shape=(None, util.prod(state.shape)))
+            self.state = tf.placeholder(dtype=tf.float32, shape=(None, ) + state.shape)
             self.returns = tf.placeholder(dtype=tf.float32, shape=(None,))
 
-            layers = []
+            layers = [{'type': 'flatten'}]
             for size in self.sizes:
                 layers.append({'type': 'dense', 'size': size})
 
