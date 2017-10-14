@@ -1,3 +1,8 @@
+This a temporary fork with PPO working with prioritized replay.
+Just untill these PR's are merged:
+- https://github.com/reinforceio/tensorforce/pull/154
+- https://github.com/reinforceio/tensorforce/pull/168 are merged.
+
 TensorForce: A TensorFlow library for applied reinforcement learning
 ====================================================================
 
@@ -43,7 +48,7 @@ Features
 
 TensorForce currently integrates with the OpenAI Gym API, OpenAI
 Universe, DeepMind lab, ALE and Maze explorer. The following algorithms are available (all
-policy methods both continuous/discrete and using a Beta distribution for bounded actions). 
+policy methods both continuous/discrete and using a Beta distribution for bounded actions).
 
 -  A3C using distributed TensorFlow or a multithreaded runner - now as part of our generic Model
     usable with different agents.
@@ -55,7 +60,7 @@ policy methods both continuous/discrete and using a Beta distribution for bounde
 -  Deep Q-learning from Demonstration (DQFD) -
     [paper](https://arxiv.org/abs/1704.03732)
 -  Proximal Policy Optimisation (PPO) - [paper](https://arxiv.org/abs/1707.06347)
--  Categorical DQN - [paper](https://arxiv.org/abs/1707.06887) 
+-  Categorical DQN - [paper](https://arxiv.org/abs/1707.06887)
 
 Installation
 ------------
@@ -101,7 +106,7 @@ pip install -e .[tf_gpu]
 ```
 
 To update TensorForce, use `pip install --upgrade tensorforce` for the PyPI
-version, or run `git pull` in the tensorforce directory if you cloned the 
+version, or run `git pull` in the tensorforce directory if you cloned the
 GitHub repository.
 Please note that we did not include OpenAI Gym/Universe/DeepMind lab in
 the default install script because not everyone will want to use these.
