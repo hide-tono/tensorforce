@@ -61,7 +61,7 @@ def main():
     parser.add_argument('-D', '--debug', action='store_true', default=True, help="Show debug outputs")
 
     # Redirect output to file
-    sys.stdout = open('lab_output.txt', 'w')
+    sys.stdout = open('lab_output.txt', 'w', encoding='utf-8')
 
     args = parser.parse_args()
 

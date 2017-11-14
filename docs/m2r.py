@@ -548,7 +548,7 @@ def setup(app):
 def parse_from_file(file):
     if not os.path.exists(file):
         raise OSError('No such file exists: {}'.format(file))
-    with open(file) as f:
+    with open(file, encoding='utf-8') as f:
         src = f.read()
     output = M2R()(src)
     return output
@@ -562,7 +562,7 @@ def save_to_file(file, src):
         if confirm.upper() not in ('Y', 'YES'):
             print('skip {}'.format(file))
             return
-    with open(target, 'w') as f:
+    with open(target, 'w', encoding='utf-8') as f:
         f.write(src)
 
 

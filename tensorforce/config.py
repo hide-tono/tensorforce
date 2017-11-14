@@ -44,7 +44,7 @@ class Configuration(object):
         else:
             path = os.path.join(os.getcwd(), filename)
 
-        with open(path, 'r') as fp:
+        with open(path, 'r', encoding='utf-8') as fp:
             json_string = fp.read()
         return Configuration.from_json_string(json_string=json_string, allow_defaults=allow_defaults)
 

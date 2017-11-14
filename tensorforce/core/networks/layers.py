@@ -427,7 +427,7 @@ def from_json(filename):
 
     """
     path = os.path.join(os.getcwd(), filename)
-    with open(path, 'r') as fp:
+    with open(path, 'r', encoding='utf-8') as fp:
         config = json.load(fp=fp)
 
     return layered_network_builder(config)

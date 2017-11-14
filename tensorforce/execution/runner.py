@@ -73,7 +73,7 @@ class Runner(object):
         if self.cluster_spec is not None:
             assert self.task_index is not None
             # Redirect process output
-            # sys.stdout = open('tf_worker_' + str(self.task_index) + '.txt', 'w', 0)
+            # sys.stdout = open('tf_worker_' + str(self.task_index) + '.txt', 'w', 0, encoding='utf-8')
             cluster_def = self.cluster_spec.as_cluster_def()
 
             if self.task_index == -1:
